@@ -1,5 +1,6 @@
 import { expect } from 'chai'
 import { matchedSpecs, transformSpec, SpecWithRelativeRoot } from '../../../src/sources'
+import path from 'path'
 
 describe('matchedSpecs', () => {
   context('got a single spec pattern from --spec via cli', () => {
@@ -89,28 +90,42 @@ describe('matchedSpecs', () => {
 })
 
 describe('transformSpec', () => {
-  it('handles backslashes by normalizing to posix, eg win32', () => {
-    const result = transformSpec({
-      projectRoot: 'C:\\Windows\\Project',
-      testingType: 'e2e',
-      absolute: 'C:\\Windows\\Project\\src\\spec.cy.js',
-      commonRoot: 'C:\\Windows\\Project\\src',
-      platform: 'win32',
-      sep: '\\',
+  describe('with win32 path', () => {
+    // make a backup of current path module for platform
+    const pathClone = Object.assign({}, path)
+
+    beforeEach(() => {
+      // make win32 path methods the default
+      Object.assign(path, path.win32)
     })
 
-    const actual: SpecWithRelativeRoot = {
-      absolute: 'C:/Windows/Project/src/spec.cy.js',
-      specFileExtension: '.cy.js',
-      fileExtension: '.js',
-      specType: 'integration',
-      baseName: 'spec.cy.js',
-      fileName: 'spec',
-      relative: 'src/spec.cy.js',
-      name: 'src/spec.cy.js',
-      relativeToCommonRoot: 'C:/Windows/Project/src/spec.cy.js',
-    }
+    afterEach(() => {
+      Object.assign(path, pathClone)
+    })
 
-    expect(result).to.eql(actual)
+    it('handles backslashes by normalizing to posix', () => {
+      const result = transformSpec({
+        projectRoot: 'C:\\Windows\\Project',
+        testingType: 'e2e',
+        absolute: 'C:\\Windows\\Project\\src\\spec.cy.js',
+        commonRoot: 'C:\\Windows\\Project\\src',
+        platform: 'win32',
+        sep: '\\',
+      })
+
+      const actual: SpecWithRelativeRoot = {
+        absolute: 'C:/Windows/Project/src/spec.cy.js',
+        specFileExtension: '.cy.js',
+        fileExtension: '.js',
+        specType: 'integration',
+        baseName: 'spec.cy.js',
+        fileName: 'spec',
+        relative: 'src/spec.cy.js',
+        name: 'src/spec.cy.js',
+        relativeToCommonRoot: 'C:/Windows/Project/src/spec.cy.js',
+      }
+
+      expect(result).to.eql(actual)
+    })
   })
 })
